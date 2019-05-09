@@ -14,24 +14,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
 """
 The SunGrid Engine runner
-
 The main() function of this module will be executed on the
 compute node by the submitted job. It accepts as a single
 argument the shared temp folder containing the package archive
 and pickled task to run, and carries out these steps:
-
 - extract tarfile of package dependencies and place on the path
 - unpickle SGETask instance created on the master node
 - run SGETask.work()
-
 On completion, SGETask on the master node will detect that
 the job has left the queue, delete the temporary folder, and
 return from SGETask.run()
 """
-
 import os
 import sys
 try:
@@ -40,32 +35,23 @@ except ImportError:
     import pickle
 import logging
 import tarfile
-
-
 def _do_work_on_compute_node(work_dir, tarball=True):
-
     if tarball:
         # Extract the necessary dependencies
         # This can create a lot of I/O overhead when running many SGEJobTasks,
         # so is optional if the luigi project is accessible from the cluster node
         _extract_packages_archive(work_dir)
-
     # Open up the pickle file with the work to be done
     os.chdir(work_dir)
-    with open("job-instance.pickle", "r") as f:
+    with open("job-instance.pickle", "rb") as f:
         job = pickle.load(f)
-
     # Do the work contained
     job.work()
-
-
 def _extract_packages_archive(work_dir):
     package_file = os.path.join(work_dir, "packages.tar")
     if not os.path.exists(package_file):
         return
-
     curdir = os.path.abspath(os.curdir)
-
     os.chdir(work_dir)
     tar = tarfile.open(package_file)
     for tarinfo in tar:
@@ -73,10 +59,7 @@ def _extract_packages_archive(work_dir):
     tar.close()
     if '' not in sys.path:
         sys.path.insert(0, '')
-
     os.chdir(curdir)
-
-
 def main(args=sys.argv):
     """Run the work() method from the class instance in the file "job-instance.pickle".
     """
@@ -93,7 +76,6 @@ def main(args=sys.argv):
         # Dump encoded data that we will try to fetch using mechanize
         print(e)
         raise
-
-
 if __name__ == '__main__':
+    from sge_runner import main
     main()
